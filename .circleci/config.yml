@@ -1,85 +1,26 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-workflows:
-  version: 2
-
-  # The build workflow will build a preview for the site, intended for PRs
-  build:
-    jobs:
-      - build-site:
-          filters:
-            branches:
-              ignore: gh-pages
-
-install: &install
-  name: install dependencies for build
-  command: |
-     $HOME/conda/bin/pip install -r ~/repo/.circleci/requirements.txt
-
-test_jobs: &test_jobs
-  name: test the jobs metadata
-  command: |
-     cd ~/repo/tests
-     $HOME/conda/bin/python -m unittest test_jobs
-
-install_python_3: &install_python_3
-  name: install Python 3.5 dependencies
-  command: | 
-      ls $HOME
-      if [ ! -d "/home/circleci/conda" ]; then
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-          /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/conda
-          export PATH=$HOME/conda/bin:$PATH
-       else
-           echo "Miniconda 3 is already installed, continuing to build."
-       fi
-
-build_jekyll: &build_jekyll
-    name: Jekyll Build
-    command: |
-        if [ -z "$CIRCLECI_TRIGGER" ]; then
-            echo "Building RSE Blog for Preview"
-            cp ~/repo/.circleci/circle_urls.sh ~/repo/circle_urls.sh
-            cd ~/repo
-            chmod u+x circle_urls.sh
-            bash circle_urls.sh              
-            bundle exec jekyll build
-        else
-            echo "Nightly build detected, preview not needed."
-        fi
-
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  build-site:
+  say-hello:
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-      - image: circleci/ruby:2.4.1
-    working_directory: ~/repo
-    environment:
-      - JEKYLL_ENV: production
-      - NOKOGIRI_USE_SYSTEM_LIBRARIES: true
-      - BUNDLE_PATH: ~/repo/vendor/bundle
+      - image: cimg/base:stable
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
-      - restore_cache:
-          keys:
-          - v1-dependencies
-          - rubygems-v1
-      - run: *install_python_3
-      - run: *install
-      - save_cache:
-          paths:
-            - /home/circleci/conda
-          key: v1-dependencies        
       - run:
-          name: Bundle Install
-          command: |
-              cd ~/repo
-              bundle check || bundle install
-      - save_cache:
-          key: rubygems-v1
-          paths:
-            - vendor/bundle
-      - run: *test_jobs
-      - run: *build_jekyll
-      - store_artifacts:
-          path: ~/repo/_site
-          destination: usrse.github.io
+          name: "Say hello"
+          command: "echo Hello, World!"
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  say-hello-workflow:
+    jobs:
+      - say-hello
